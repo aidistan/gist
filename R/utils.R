@@ -1,6 +1,6 @@
-# Install packages if not installed and require them all
-use.packages <- function(list) {
-  new.packages <- list[!(list %in% installed.packages()[,'Package'])]
+# Install packages if not installed and require them in one line
+use.packages <- function(packages) {
+  new.packages <- packages[!(packages %in% installed.packages()[,'Package'])]
   if(length(new.packages)) install.packages(new.packages)
-  for(pkg in list ) library(pkg, character.only = TRUE)
+  for(pkg in packages) library(pkg, character.only = TRUE)
 }

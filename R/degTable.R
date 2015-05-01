@@ -1,6 +1,4 @@
-#
-# Get differentially-expressed genes in table format
-#
+# Analyze gene differential expression
 
 use.packages('limma')
 

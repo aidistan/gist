@@ -1,4 +1,7 @@
+#
 # Install packages if not installed and require them in one line
+#
+
 use.packages <- function(packages) {
   # Find uninstalled packages
   uninstalled <- packages[!(packages %in% installed.packages()[,'Package'])]

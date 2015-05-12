@@ -10,7 +10,7 @@ text_file = ARGV.shift
 dict_file = ARGV.shift
 
 dict = {}
-File.open(dict_file).each do |line|
+File.read(dict_file).split(/\r|\r\n|\n/).each do |line|
   col = line.chomp.split("\t")
   dict[col[0]] = col[1]
 end

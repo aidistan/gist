@@ -1,4 +1,7 @@
 #!/usr/bin/env ruby
+#
+# Substitue text globally
+#
 require 'optparse'
 
 options = {}

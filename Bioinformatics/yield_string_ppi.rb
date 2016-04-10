@@ -1,4 +1,7 @@
 #!/usr/bin/env ruby
+#
+# Yield STRING PPI from downloaded data files
+#
 require 'biotcm'
 BioTCM::Databases::HGNC.ensure
 
@@ -45,8 +48,8 @@ else
   protein2symbol.each_key do |protein|
     json = JSON.parse(http.request(
       Net::HTTP::Get.new("/xrefs/id/#{protein}?external_db=Uniprot/SWISSPROT", {
-    	  'Content-Type' => 'application/json' 
-    	})
+        'Content-Type' => 'application/json'
+      })
     ).body)
     next if json.is_a?(Hash) || json.empty?
     p protein2symbol[protein] = json.first['primary_id'].uniprot2symbol

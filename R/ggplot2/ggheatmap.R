@@ -1,117 +1,187 @@
-library(ggplot2)
-library(reshape2)
-library(ggdendro)
-library(grid)
-library(gridExtra)
+source('https://aidistan.github.io/gist/R/use.packages.R')
+use.packages('ggplot2', 'reshape2', 'ggdendro', 'grid', 'gridExtra')
 
-# Example data
-data <- matrix(
-  data = runif(60 * 48), nrow = 48, ncol = 60,
-  dimnames = list(
-    Row = paste('Row', 1:48),
-    Column = paste('Col', 1:60)
-  )
-)
-labels <- matrix(
-  data = round(runif(180, min = 1, max = 4)), nrow = 3, ncol = 60,
-  dimnames = list(
-    Feature = c('Label 1', 'Label 2', 'Label 3'),
-    Column = colnames(data)
-  )
-)
+ggheatmap <- function (
+  data, labels = NULL, row.cluster = FALSE, col.cluster = FALSE, heatmap.scale = NULL
+) {
 
-# Cluster results
-row_cr <- hclust(dist(data))
-col_cr <- hclust(dist(t(data)))
-data <- data[row_cr$order, col_cr$order]
-labels <- labels[,col_cr$order]
+  #
+  # Preprocess labels
+  #
 
-# Heatmap
-dim_names <- dimnames(data)
-dimnames(data) <- list(row = 1:nrow(data), column = 1:ncol(data))
-gHeatmap <- ggplotGrob(
-  ggplot(melt(data))
-    + geom_tile(aes(x = column, y = row, fill = value), color = 'white', size = 1)
-    + labs(title = NULL, x = NULL, y = NULL)
-    + scale_fill_gradient(low = 'white', high = 'steelblue', guide = 'none')
-    + scale_x_continuous(expand = c(0, 0))
-    + scale_y_continuous(expand = c(0, 0))
-    + theme(
-      axis.ticks = element_line(size = 0),
-      axis.text = element_text(size = 0)
-    )
-#     + scale_x_continuous(expand = c(0, 0), labels = dim_names[[2]], breaks=1:length(dim_names[[2]]))
-#     + scale_y_continuous(expand = c(0, 0), labels = dim_names[[1]], breaks=-1:-length(dim_names[[1]]))
-#     + theme(
-#       axis.text.x = element_text(size = 16, angle = 90, vjust = 0.5),
-#       axis.text.y = element_text(size = 16, angle =  0, hjust = 1)
-#     )
-)
+  if (class(labels) %in% c('matrix', 'data.frame')) {
+    label_names <- rownames(labels)
+    names(label_names) <- label_names
+    labels <- lapply(label_names, function (name) { labels[name,] })
+  }
 
-# Column labels
-dim_names <- dimnames(labels)
-dimnames(labels) <- list(row = -1:-nrow(labels), column = 1:ncol(labels))
-gColLabels <- ggplotGrob(
-  ggplot(melt(labels))
-    + geom_tile(aes(x = column, y = row, fill = factor(value)), color = 'white', size = 1)
-    + labs(title = NULL, x = NULL, y = NULL)
-    + scale_fill_brewer(palette = 'Set2', guide = 'none')
-    + scale_x_continuous(expand = c(0, 0))
-    + scale_y_continuous(expand = c(0, 0))
-    + theme(
-      axis.ticks = element_line(size = 0),
-      axis.text = element_text(size = 0)
-    )
-#     + scale_x_continuous(expand = c(0, 0), labels = dim_names[[2]], breaks=1:length(dim_names[[2]]))
-#     + scale_y_continuous(expand = c(0, 0), labels = dim_names[[1]], breaks=-1:-length(dim_names[[1]]))
-#     + theme(
-#       axis.text.x = element_text(size = 16, angle = 90, hjust = 0),
-#       axis.text.y = element_text(size = 16, angle =  0, hjust = 1)
-#     )
-)
-gColLabelTicks <- ggplotGrob(
-  ggplot(melt(labels))
-    + geom_tile(aes(x = column, y = row), color = 'white', fill = 'white')
-    + labs(title = NULL, x = NULL, y = NULL)
-    + scale_x_continuous(expand = c(0, 0))
-    + scale_y_continuous(expand = c(0, 0), labels = dim_names[[1]], breaks=-1:-length(dim_names[[1]]))
-    + theme(
-      axis.ticks = element_line(size = 0),
-      axis.text = element_text(size = 0),
-      axis.text.y = element_text(size = 16, angle =  0, hjust = 1)
-    )
-)
+  if (class(labels) == 'list') {
+    labels <- lapply(labels, function(label) {
+      if (class(label) == 'list') {
+        label
+      } else {
+        list(data = label, scale =
+          if (class(label) == 'factor') {
+            scale_fill_brewer(palette = 'Set2')
+          } else if (min(label, na.rm = T) >= 0) {
+            scale_fill_gradient(low = 'white', high = 'steelblue')
+          } else {
+            scale_fill_gradient2(low = '#1010f0', mid = 'white', high = '#f01010', midpoint = 0)
+          }
+        )
+      }
+    })
+  }
 
-# Dendrograms
-col_cr <- dendro_data(col_cr)
-gColDendro <- ggplotGrob(
-  ggdendrogram(col_cr) +
+  #
+  # Cluster
+  #
+
+  if (row.cluster) {
+    row_cr <- hclust(dist(data))
+    data <- data[row_cr$order,]
+  }
+
+  if (col.cluster) {
+    col_cr <- hclust(dist(t(data)))
+    data <- data[,col_cr$order]
+    for (name in names(labels)) {
+      labels[[name]]$data <- labels[[name]]$data[col_cr$order]
+    }
+  }
+
+  #
+  # Heatmap
+  #
+
+  gHeatmap <- ggplot(melt(matrix(
+    data = as.matrix(data), nrow = nrow(data), ncol = ncol(data),
+    dimnames = list(row = 1:nrow(data), column = 1:ncol(data))
+  ))) +
+    geom_tile(aes(x = column, y = row, fill = value), color = 'white', size = 1) +
     labs(title = NULL, x = NULL, y = NULL) +
-    scale_x_continuous(
-      expand = c(0, 0), limits = c(0.5, nrow(col_cr$labels) + 0.5),
-      breaks = seq_along(col_cr$labels$label), labels = col_cr$labels$label
-    ) +
+    scale_x_continuous(expand = c(0, 0), labels = colnames(data), breaks=1:ncol(data)) +
+    scale_y_reverse(expand = c(0, 0), labels = rownames(data), breaks=1:nrow(data)) +
     theme(
-      axis.text.x = element_text(size = 16),
-      axis.text.y = element_text(size = 0)
+      legend.position = "bottom",
+      legend.title = element_text(size = 0),
+      axis.ticks = element_line(size = 0),
+      axis.text.x = element_text(size = 13, angle = 90, vjust = 0.5, hjust = 0),
+      axis.text.y = element_text(size = 13, angle =  0, vjust = 0.5, hjust = 0)
     )
-)
-row_cr <- dendro_data(row_cr)
-gRowDendro <- ggplotGrob(
-  ggdendrogram(row_cr, rotate = T) +
-    labs(title = NULL, x = NULL, y = NULL) +
-    scale_x_continuous(
-      expand = c(0, 0), limits = c(0.5, nrow(row_cr$labels) + 0.5),
-      breaks = seq_along(row_cr$labels$label), labels = row_cr$labels$label
-    ) +
-    theme(
-      axis.text.x = element_text(size = 0),
-      axis.text.y = element_text(size = 16)
-    )
-)
 
-# Plot
-grid.arrange(
-  gColDendro, nullGrob(), gColLabels, gColLabelTicks, gHeatmap, gRowDendro,
-  nrow = 3, ncol = 2, widths = c(4, 1), heights = c(4, nrow(labels), nrow(data))
-)
+  gHeatmap <- gHeatmap +
+    if (!is.null(heatmap.scale)) {
+      heatmap.scale
+    } else if (min(data, na.rm = T) >= 0) {
+      scale_fill_gradient(low = 'white', high = 'steelblue')
+    } else {
+      scale_fill_gradient2(low = '#1010f0', mid = 'white', high = '#f01010', midpoint = 0)
+    }
+
+  gHeatmap <- ggplotGrob(gHeatmap)
+
+  #
+  # Labels
+  #
+
+  gLabels <- lapply(names(labels), function (name) {
+    ggplotGrob(
+      ggplot(data.frame(x = 1:ncol(data), y = 1, data = labels[[name]]$data)) +
+        geom_tile(aes(x = x, y = y, fill = data), color = 'white', size = 1) +
+        labs(title = NULL, x = NULL, y = NULL) +
+        scale_x_continuous(expand = c(0, 0)) +
+        scale_y_continuous(expand = c(0, 0), labels = c(name), breaks = c(1)) +
+        labels[[name]]$scale +
+        theme(
+          legend.position = "bottom",
+          legend.title = element_text(size = 0),
+          axis.ticks = element_line(size = 0),
+          axis.text.x = element_text(size = 0),
+          axis.text.y = element_text(size = 13, angle =  0, vjust = 0.5, hjust = 0)
+        )
+    )
+  })
+
+  #
+  # Col dendrogram
+  #
+
+  if (col.cluster) {
+    col_cr <- dendro_data(col_cr)
+    gColDendro <- ggplotGrob(
+      ggdendrogram(col_cr, labels = F) +
+        labs(title = NULL, x = NULL, y = NULL) +
+        scale_x_continuous(
+          expand = c(0, 0), limits = c(0.5, nrow(col_cr$labels) + 0.5),
+          breaks = seq_along(col_cr$labels$label), labels = col_cr$labels$label
+        ) +
+        theme(axis.text = element_text(size = 0))
+    )
+  }
+
+  #
+  # Row dendrogram
+  #
+
+  if (row.cluster) {
+    row_cr <- dendro_data(row_cr)
+    gRowDendro <- ggplotGrob(
+      ggdendrogram(row_cr, labels = F, rotate = T) +
+        labs(title = NULL, x = NULL, y = NULL) +
+        scale_x_continuous(
+          expand = c(0, 0), limits = c(0.5, nrow(row_cr$labels) + 0.5),
+          breaks = seq_along(row_cr$labels$label), labels = row_cr$labels$label
+        ) +
+        theme(axis.text = element_text(size = 0))
+    )
+  }
+
+  #
+  # Combine
+  #
+
+  widths <- unit.c(
+    unit(ncol(data), units = 'null'),
+    unit(max(sapply(rownames(data), nchar)), units = 'char'),
+    unit(2, units = 'null'),
+    unit(4, units = 'cm')
+  )
+
+  # Add row dendro
+  nrow <- 1
+  heights <- unit(4, units = 'null')
+  if (col.cluster) {
+    grobs <- list(gColDendro[6, 4], zeroGrob(), zeroGrob(), gHeatmap[10, 4])
+  } else {
+    grobs <- list(zeroGrob(), zeroGrob(), zeroGrob(), gHeatmap[10, 4])
+  }
+
+  # Add column names
+  nrow <- nrow + 1
+  heights <- unit.c(heights, unit(max(sapply(colnames(data), nchar)), units = 'char'))
+  grobs <- c(grobs, list(gHeatmap[7, 4], zeroGrob(), zeroGrob(), zeroGrob()))
+
+  # Add the labels
+  for (gLabel in gLabels) {
+    nrow <- nrow + 1
+    heights <- unit.c(heights, unit(1, units = 'null'))
+    grobs <- c(grobs, list(gLabel[6, 4], gLabel[6, 3], zeroGrob(), gLabel[10, 4]))
+  }
+  if (length(gLabels) > 0) {
+    nrow <- nrow + 1
+    heights <- unit.c(heights, unit(1, units = 'null'))
+    grobs <- c(grobs, list(zeroGrob(), zeroGrob(), zeroGrob(), zeroGrob()))
+  }
+
+  # Add the heatmap & col dendro
+  nrow <- nrow + 1
+  heights <- unit.c(heights, unit(nrow(data), units = 'null'))
+  if (row.cluster) {
+    grobs <- c(grobs, list(gHeatmap[6, 4], gHeatmap[6, 3], gRowDendro[6, 4], zeroGrob()))
+  } else {
+    grobs <- c(grobs, list(gHeatmap[6, 4], gHeatmap[6, 3], zeroGrob(), zeroGrob()))
+  }
+
+  return(grid.arrange(grobs = grobs, nrow = nrow, ncol = 4, widths = widths, heights = heights))
+}

@@ -1,0 +1,85 @@
+---
+title: "ggheatmap"
+output:
+  html_document:
+    fig_height: 12.5
+    fig_width: 16
+    toc: yes
+---
+
+```{r, echo = F}
+source('ggheatmap.R')
+```
+
+```r
+source('https://aidistan.github.io/gist/R/ggplot2/ggheatmap.R')
+```
+
+# Basic heatmap
+
+```{r}
+data <- matrix(
+  data = rnorm(60 * 48), nrow = 48, ncol = 60,
+  dimnames = list(
+    Row = paste('Row', 1:48),
+    Column = paste('Col', 1:60)
+  )
+)
+
+ggheatmap(data)
+```
+
+# Heatmap with labels
+
+```{r}
+labels <- list(
+  Label.A = round(runif(60, min = 0, max = 1)),
+  Label.B = factor(round(runif(60, min = 1, max = 3)))
+)
+
+ggheatmap(data, labels)
+```
+
+# Heatmap with clusterings
+
+```{r}
+ggheatmap(data, labels, row.cluster = T)
+ggheatmap(data, labels, col.cluster = T)
+ggheatmap(data, labels, row.cluster = T, col.cluster = T)
+```
+
+# Advanced usage
+
+## Use data.frame/matrix labels
+
+```{r}
+labels <- matrix(
+  data = round(runif(180, min = 1, max = 4)), nrow = 3, ncol = 60,
+  dimnames = list(c('Label 1', 'Label 2', 'Label 3'))
+)
+
+ggheatmap(data, labels)
+```
+
+## Use custom scales for labels
+
+```{r}
+labels <- list(
+  Label.A = list(
+    data = runif(60, min = 0, max = 10),
+    scale = scale_fill_gradientn(colours = rainbow(5))
+  ),
+  Label.B = list(
+    data = factor(round(runif(60, min = 1, max = 4))),
+    scale = scale_colour_brewer(palette = "Set1")
+  )
+)
+
+ggheatmap(data, labels)
+```
+
+## Use custom heatmap scale
+
+```{r}
+ggheatmap(data, heatmap.scale = scale_fill_distiller(palette = "Spectral"))
+```

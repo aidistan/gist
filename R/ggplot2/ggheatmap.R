@@ -64,8 +64,8 @@ ggheatmap <- function (
     scale_y_reverse(expand = c(0, 0), labels = rownames(data), breaks=1:nrow(data)) +
     theme(
       legend.position = "bottom",
-      legend.title = element_text(size = 0),
-      axis.ticks = element_line(size = 0),
+      legend.title = element_blank(),
+      axis.ticks = element_blank(),
       axis.text.x = element_text(size = 13, angle = 90, vjust = 0.5, hjust = 0),
       axis.text.y = element_text(size = 13, angle =  0, vjust = 0.5, hjust = 0)
     )
@@ -95,9 +95,9 @@ ggheatmap <- function (
         labels[[name]]$scale +
         theme(
           legend.position = "bottom",
-          legend.title = element_text(size = 0),
-          axis.ticks = element_line(size = 0),
-          axis.text.x = element_text(size = 0),
+          legend.title = element_blank(),
+          axis.ticks = element_blank(),
+          axis.text.x = element_blank(),
           axis.text.y = element_text(size = 13, angle =  0, vjust = 0.5, hjust = 0)
         )
     )

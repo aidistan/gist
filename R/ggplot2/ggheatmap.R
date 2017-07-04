@@ -63,7 +63,6 @@ ggheatmap <- function (
     scale_x_continuous(expand = c(0, 0), labels = colnames(data), breaks=1:ncol(data)) +
     scale_y_reverse(expand = c(0, 0), labels = rownames(data), breaks=1:nrow(data)) +
     theme(
-      legend.position = "bottom",
       legend.title = element_blank(),
       axis.ticks = element_blank(),
       axis.text.x = element_text(size = 13, angle = 90, vjust = 0.5, hjust = 0),
@@ -86,6 +85,8 @@ ggheatmap <- function (
   #
 
   gLabels <- lapply(names(labels), function (name) {
+    labels[[name]]$scale$name <- name
+
     ggplotGrob(
       ggplot(data.frame(x = 1:ncol(data), y = 1, data = labels[[name]]$data)) +
         geom_tile(aes(x = x, y = y, fill = data), color = 'white', size = 1) +
@@ -94,8 +95,6 @@ ggheatmap <- function (
         scale_y_continuous(expand = c(0, 0), labels = c(name), breaks = c(1)) +
         labels[[name]]$scale +
         theme(
-          legend.position = "bottom",
-          legend.title = element_blank(),
           axis.ticks = element_blank(),
           axis.text.x = element_blank(),
           axis.text.y = element_text(size = 13, angle =  0, vjust = 0.5, hjust = 0)
@@ -138,23 +137,24 @@ ggheatmap <- function (
   }
 
   #
-  # Combine
+  # Arrange
   #
 
   widths <- unit.c(
     unit(ncol(data), units = 'null'),
     unit(max(sapply(rownames(data), nchar)), units = 'char'),
-    unit(2, units = 'null'),
-    unit(4, units = 'cm')
+    unit(if (row.cluster) 4 else 0, units = 'null'),
+    unit(1, units = 'null')
   )
 
   # Add row dendro
   nrow <- 1
-  heights <- unit(4, units = 'null')
   if (col.cluster) {
-    grobs <- list(gColDendro[6, 4], zeroGrob(), zeroGrob(), gHeatmap[10, 4])
+    heights <- unit(4, units = 'null')
+    grobs <- list(gColDendro[6, 4], zeroGrob(), zeroGrob(), zeroGrob())
   } else {
-    grobs <- list(zeroGrob(), zeroGrob(), zeroGrob(), gHeatmap[10, 4])
+    heights <- unit(0, units = 'null')
+    grobs <- list(zeroGrob(), zeroGrob(), zeroGrob(), zeroGrob())
   }
 
   # Add column names
@@ -166,7 +166,7 @@ ggheatmap <- function (
   for (gLabel in gLabels) {
     nrow <- nrow + 1
     heights <- unit.c(heights, unit(1, units = 'null'))
-    grobs <- c(grobs, list(gLabel[6, 4], gLabel[6, 3], zeroGrob(), gLabel[10, 4]))
+    grobs <- c(grobs, list(gLabel[6, 4], gLabel[6, 3], zeroGrob(), zeroGrob()))
   }
   if (length(gLabels) > 0) {
     nrow <- nrow + 1
@@ -183,5 +183,11 @@ ggheatmap <- function (
     grobs <- c(grobs, list(gHeatmap[6, 4], gHeatmap[6, 3], zeroGrob(), zeroGrob()))
   }
 
-  return(grid.arrange(grobs = grobs, nrow = nrow, ncol = 4, widths = widths, heights = heights))
+  # Bind together
+  gMain <- arrangeGrob(grobs = grobs, nrow = nrow, ncol = 4, widths = widths, heights = heights)
+  gLegand <- arrangeGrob(grobs = c(list(gHeatmap[6, 8]), lapply(gLabels, function (gLabel) { gLabel[6,8] })), ncol = 1)
+  return(grid.arrange(
+    grobs = list(gMain, gLegand), nrow = 1, ncol = 2,
+    widths = unit.c(unit(1, units = 'null'), Reduce(max, lapply(gLegand$grobs, function (grob) { grob$widths })))
+  ))
 }

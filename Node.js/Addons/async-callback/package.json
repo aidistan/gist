@@ -1,0 +1,7 @@
+{
+  "name": "async-callback",
+  "dependencies": {
+    "nan": "^2.6.2"
+  },
+  "gypfile": true
+}

@@ -9,11 +9,17 @@ use.packages <- function(...) {
   # Try to install all uninstalled packages
   if(length(uninstalled)) {
     # Install from CRAN
-    cran <- uninstalled[uninstalled %in% available.packages()[, 'Package']]
-    if(length(cran)) install.packages(cran)
+    cran <- uninstalled[uninstalled %in% available.packages(
+      contriburl = contrib.url("https://cran.rstudio.com/")
+    )[, 'Package']]
+    if(length(cran)) install.packages(cran,
+      contriburl = contrib.url("https://cran.rstudio.com/")
+    )
 
     # Install from BioConductor
-    bioc <- uninstalled[!(uninstalled %in% available.packages()[, 'Package'])]
+    bioc <- uninstalled[!(uninstalled %in% available.packages(
+      contriburl = contrib.url("https://cran.rstudio.com/")
+    )[, 'Package'])]
     if(length(bioc)) {
       source("http://bioconductor.org/biocLite.R")
       biocLite()

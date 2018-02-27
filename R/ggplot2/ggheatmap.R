@@ -2,7 +2,8 @@ source('https://aidistan.github.io/gist/R/use.packages.R')
 use.packages('ggplot2', 'reshape2', 'ggdendro', 'grid', 'gridExtra')
 
 ggheatmap <- function (
-  data, labels = NULL, row.cluster = FALSE, col.cluster = FALSE, heatmap.scale = NULL
+  data, labels = NULL, row.cluster = FALSE, col.cluster = FALSE,
+  heatmap.compact = FALSE, heatmap.scale = NULL
 ) {
 
   #
@@ -57,8 +58,16 @@ ggheatmap <- function (
   gHeatmap <- ggplot(melt(matrix(
     data = as.matrix(data), nrow = nrow(data), ncol = ncol(data),
     dimnames = list(row = 1:nrow(data), column = 1:ncol(data))
-  ))) +
-    geom_tile(aes(x = column, y = row, fill = value), color = 'white', size = 1) +
+  )))
+
+  gHeatmap <- gHeatmap +
+    if (heatmap.compact) {
+      geom_tile(aes(x = column, y = row, fill = value), size = 1)
+    } else {
+      geom_tile(aes(x = column, y = row, fill = value), size = 1, color = 'white')
+    }
+
+  gHeatmap <- gHeatmap +
     labs(title = NULL, x = NULL, y = NULL) +
     scale_x_continuous(expand = c(0, 0), labels = colnames(data), breaks=1:ncol(data)) +
     scale_y_reverse(expand = c(0, 0), labels = rownames(data), breaks=1:nrow(data)) +
@@ -87,19 +96,27 @@ ggheatmap <- function (
   gLabels <- lapply(names(labels), function (name) {
     labels[[name]]$scale$name <- name
 
-    ggplotGrob(
-      ggplot(data.frame(x = 1:ncol(data), y = 1, data = labels[[name]]$data)) +
-        geom_tile(aes(x = x, y = y, fill = data), color = 'white', size = 1) +
-        labs(title = NULL, x = NULL, y = NULL) +
-        scale_x_continuous(expand = c(0, 0)) +
-        scale_y_continuous(expand = c(0, 0), labels = c(name), breaks = c(1)) +
-        labels[[name]]$scale +
-        theme(
-          axis.ticks = element_blank(),
-          axis.text.x = element_blank(),
-          axis.text.y = element_text(size = 13, angle =  0, vjust = 0.5, hjust = 0)
-        )
-    )
+    gLabel <- ggplot(data.frame(x = 1:ncol(data), y = 1, data = labels[[name]]$data))
+
+    gLabel <- gLabel +
+      if (heatmap.compact) {
+        geom_tile(aes(x = x, y = y, fill = data), size = 1)
+      } else {
+        geom_tile(aes(x = x, y = y, fill = data), size = 1, color = 'white')
+      }
+
+    gLabel <- gLabel +
+      labs(title = NULL, x = NULL, y = NULL) +
+      scale_x_continuous(expand = c(0, 0)) +
+      scale_y_continuous(expand = c(0, 0), labels = c(name), breaks = c(1)) +
+      labels[[name]]$scale +
+      theme(
+        axis.ticks = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 13, angle =  0, vjust = 0.5, hjust = 0)
+      )
+
+    return(ggplotGrob(gLabel))
   })
 
   #

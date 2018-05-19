@@ -11,14 +11,15 @@ Metrics/CyclomaticComplexity:
   Enabled: false
 Metrics/PerceivedComplexity:
   Enabled: false
-Style/AlignHash:
+Style/AsciiComments:
   Enabled: false
 Style/GuardClause:
   Enabled: false
 
 # We prefer indented style then aligned style.
-Style/AlignParameters:
+Layout/AlignHash:
+  Enabled: false
+Layout/AlignParameters:
   EnforcedStyle: with_fixed_indentation
-Style/MultilineMethodCallIndentation:
+Layout/MultilineMethodCallIndentation:
   EnforcedStyle: indented
-

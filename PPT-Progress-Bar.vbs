@@ -1,4 +1,7 @@
-'' Refer to https://gist.github.com/PiiXiieeS/7181980
+'' Go to Tools > Macro > Visual Basic Editor, select Insert > Module, copy
+'' following text in the blank page. Then choose File > Close > Return to PPT,
+'' go to Tools > Macro > Macros, then select AddProcessBar and press Execute.
+
 Sub AddProgressBar()
   On Error Resume Next
     With ActivePresentation
@@ -21,6 +24,15 @@ Sub AddProgressBar()
         Else
           n = n + 1
         End If
+      Next i:
+    End With
+End Sub
+
+Sub RemoveProgressBar()
+  On Error Resume Next
+    With ActivePresentation
+      For i = 1 To .Slides.Count
+        .Slides(i).Shapes("progressBar").Delete
       Next i:
     End With
 End Sub
